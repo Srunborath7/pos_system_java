@@ -1,5 +1,6 @@
 package com.example.pos_system.controller;
 
+import com.example.pos_system.entity.Category;
 import com.example.pos_system.entity.User;
 import com.example.pos_system.service.UserService;
 import org.springframework.http.ResponseEntity;
@@ -29,8 +30,9 @@ public class UserController {
     }
 
     @PostMapping
-    public User create(@RequestBody User user) {
-        return userService.save(user);
+    public ResponseEntity<String> create(@RequestBody User user) {
+        userService.save(user);
+        return ResponseEntity.status(201).body("User inserted successfully");
     }
 
     @PutMapping("/{id}")
@@ -39,13 +41,17 @@ public class UserController {
             user.setName(userDetails.getName());
             user.setEmail(userDetails.getEmail());
             user.setPassword(userDetails.getPassword());
-            return ResponseEntity.ok(userService.save(user));
+            User updatedUser = userService.save(user);
+            return ResponseEntity.ok(updatedUser);
         }).orElse(ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        userService.deleteById(id);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<String> delete(@PathVariable Long id) {
+        return userService.findById(id).map(user -> {
+            userService.deleteById(id);
+            return ResponseEntity.ok("User deleted successfully");
+        }).orElse(ResponseEntity.notFound().build());
     }
+
 }
