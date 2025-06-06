@@ -5,36 +5,29 @@ import com.example.pos_system.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class UserService {
+    private final UserRepository userRepository;
 
-    private final UserRepository repository;
-
-    public UserService(UserRepository repository) {
-        this.repository = repository;
+    public UserService(UserRepository userRepository) {
+        this.userRepository = userRepository;
     }
 
-    public List<User> getAllUsers() {
-        return repository.findAll();
+    public List<User> findAll() {
+        return userRepository.findAll();
     }
 
-    public User saveUser(User user) {
-        return repository.save(user);
+    public Optional<User> findById(Long id) {
+        return userRepository.findById(id);
     }
 
-    public User updateUser(Long id, User updatedUser) {
-        return repository.findById(id)
-                .map(user -> {
-                    user.setUsername(updatedUser.getUsername());
-                    user.setEmail(updatedUser.getEmail());
-                    user.setPassword(updatedUser.getPassword());
-                    return repository.save(user);
-                })
-                .orElseThrow(() -> new RuntimeException("User not found"));
+    public User save(User user) {
+        return userRepository.save(user);
     }
 
-    public void deleteUser(Long id) {
-        repository.deleteById(id);
+    public void deleteById(Long id) {
+        userRepository.deleteById(id);
     }
 }
