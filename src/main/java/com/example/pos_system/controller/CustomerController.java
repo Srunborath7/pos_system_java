@@ -2,6 +2,7 @@ package com.example.pos_system.controller;
 
 import com.example.pos_system.entity.Customer;
 import com.example.pos_system.service.CustomerService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -27,17 +28,22 @@ public class CustomerController {
     }
 
     @PostMapping
-    public Customer create(@RequestBody Customer customer) {
-        return service.saveCustomer(customer);
+    public ResponseEntity <String>create(@RequestBody Customer customer) {
+        service.saveCustomer(customer);
+        return ResponseEntity.status(201).body("User inserted successfully");
     }
 
     @PutMapping("/{id}")
-    public Customer update(@PathVariable Long id, @RequestBody Customer customer) {
-        return service.updateCustomer(id, customer);
+    public  ResponseEntity <String> update(@PathVariable Long id, @RequestBody Customer customer) {
+        service.updateCustomer(id, customer);
+        return ResponseEntity.status(201).body("User Updated successfully");
     }
 
     @DeleteMapping("/{id}")
-    public void delete(@PathVariable Long id) {
+    public  ResponseEntity <String> delete(@PathVariable Long id) {
         service.deleteCustomer(id);
+        return ResponseEntity.status(204).body("User Deleted successfully");
     }
+
+
 }

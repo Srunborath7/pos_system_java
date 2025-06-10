@@ -23,23 +23,32 @@ public class InventoryController {
     }
 
     @GetMapping("/{id}")
-    public Inventory getById(@PathVariable Long id) {
-        return service.getInventoryById(id);
+    public ResponseEntity<Inventory> getById(@PathVariable Long id) {
+        Inventory inventory = service.getInventoryById(id);
+        if (inventory != null) {
+            return ResponseEntity.ok(inventory);
+        }
+        return ResponseEntity.notFound().build();
     }
 
     @PostMapping
-    public ResponseEntity<Inventory> create(@RequestBody Inventory inventory) {
-        Inventory saved = service.saveInventory(inventory);
-        return ResponseEntity.ok(saved);
+    public ResponseEntity<String> create(@RequestBody Inventory inventory) {
+        service.saveInventory(inventory);
+        return ResponseEntity.status(201).body("Inventory created successfully");
     }
 
     @PutMapping("/{id}")
-    public Inventory update(@PathVariable Long id, @RequestBody Inventory inventory) {
-        return service.updateInventory(id, inventory);
+    public ResponseEntity<String> update(@PathVariable Long id, @RequestBody Inventory inventory) {
+        Inventory updated = service.updateInventory(id, inventory);
+        if (updated != null) {
+            return ResponseEntity.ok("Inventory updated successfully");
+        }
+        return ResponseEntity.notFound().build();
     }
 
     @DeleteMapping("/{id}")
-    public void delete(@PathVariable Long id) {
+    public ResponseEntity<String> delete(@PathVariable Long id) {
         service.deleteInventory(id);
+        return ResponseEntity.ok("Inventory deleted successfully");
     }
 }
