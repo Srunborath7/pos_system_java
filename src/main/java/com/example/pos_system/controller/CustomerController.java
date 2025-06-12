@@ -11,39 +11,56 @@ import java.util.List;
 @RequestMapping("/api/customers")
 public class CustomerController {
 
-    private final CustomerService service;
+    private final CustomerService customerService;
 
-    public CustomerController(CustomerService service) {
-        this.service = service;
+    public CustomerController(CustomerService customerService) {
+        this.customerService = customerService;
     }
 
     @GetMapping
-    public List<Customer> getAll() {
-        return service.getAllCustomers();
+    public ResponseEntity<List<Customer>> getAllCustomers() {
+        List<Customer> customers = customerService.getAllCustomers();
+        if (customers.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.ok(customers);
     }
 
     @GetMapping("/{id}")
-    public Customer getById(@PathVariable Long id) {
-        return service.getCustomerById(id);
+    public ResponseEntity<?> getCustomerById(@PathVariable Long id) {
+        Customer customer = customerService.getCustomerById(id);
+        if (customer == null) {
+            return ResponseEntity.status(404).body("Customer with ID " + id + " not found");
+        }
+        return ResponseEntity.ok(customer);
     }
 
     @PostMapping
-    public ResponseEntity <String>create(@RequestBody Customer customer) {
-        service.saveCustomer(customer);
-        return ResponseEntity.status(201).body("User inserted successfully");
+    public ResponseEntity<?> createCustomer(@RequestBody Customer customer) {
+        try {
+            Customer savedCustomer = customerService.saveCustomer(customer);
+            return ResponseEntity.ok(savedCustomer);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Failed to create customer: " + e.getMessage());
+        }
     }
 
     @PutMapping("/{id}")
-    public  ResponseEntity <String> update(@PathVariable Long id, @RequestBody Customer customer) {
-        service.updateCustomer(id, customer);
-        return ResponseEntity.status(201).body("User Updated successfully");
+    public ResponseEntity<?> updateCustomer(@PathVariable Long id, @RequestBody Customer customer) {
+        Customer updatedCustomer = customerService.updateCustomer(id, customer);
+        if (updatedCustomer == null) {
+            return ResponseEntity.status(404).body("Customer with ID " + id + " not found");
+        }
+        return ResponseEntity.ok(updatedCustomer);
     }
 
     @DeleteMapping("/{id}")
-    public  ResponseEntity <String> delete(@PathVariable Long id) {
-        service.deleteCustomer(id);
-        return ResponseEntity.status(204).body("User Deleted successfully");
+    public ResponseEntity<?> deleteCustomer(@PathVariable Long id) {
+        boolean deleted = customerService.deleteCustomer(id);
+        if (deleted) {
+            return ResponseEntity.ok("Customer with ID " + id + " deleted successfully");
+        } else {
+            return ResponseEntity.status(404).body("Customer with ID " + id + " not found");
+        }
     }
-
-
 }

@@ -4,32 +4,31 @@ import com.example.pos_system.entity.Sale;
 import com.example.pos_system.repository.SaleRepository;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class SaleService {
 
-    private final SaleRepository repository;
+    private final SaleRepository saleRepository;
 
-    public SaleService(SaleRepository repository) {
-        this.repository = repository;
+    public SaleService(SaleRepository saleRepository) {
+        this.saleRepository = saleRepository;
     }
 
     public List<Sale> getAllSales() {
-        return repository.findAll();
+        return saleRepository.findAll();
     }
 
-    public Sale getSaleById(Long id) {
-        return repository.findById(id).orElse(null);
+    public Optional<Sale> getSaleById(Long id) {
+        return saleRepository.findById(id);
     }
 
     public Sale saveSale(Sale sale) {
-        sale.setSaleDate(LocalDateTime.now());
-        return repository.save(sale);
+        return saleRepository.save(sale);
     }
 
     public void deleteSale(Long id) {
-        repository.deleteById(id);
+        saleRepository.deleteById(id);
     }
 }

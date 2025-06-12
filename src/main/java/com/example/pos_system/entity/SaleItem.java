@@ -8,26 +8,30 @@ import java.time.LocalDateTime;
 
 @Data
 @Entity
-@Table(name = "sale")
-public class Sale {
+@Table(name = "sale_item")
+public class SaleItem {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long saleId;
-
-    private String description;
-
-    private LocalDateTime saleDate;
+    private Long saleItemId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "customer_id")
+    @JoinColumn(name = "sale_id", nullable = false)
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
-    private Customer customer;
+    private Sale sale;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "user_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "product_id", nullable = false)
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
-    private User user;
+    private Product product;
+
+    private Integer quantity;
+
+    private Double discount;
+
+    private Double total;
+
+    private LocalDateTime saleDate;
 
     @PrePersist
     public void prePersist() {

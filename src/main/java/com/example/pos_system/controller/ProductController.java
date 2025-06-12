@@ -53,7 +53,6 @@ public class ProductController {
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
-
     // Delete product
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteProduct(@PathVariable Long id) {
