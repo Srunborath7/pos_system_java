@@ -16,15 +16,15 @@ import java.util.Optional;
 public class SaleItemService {
 
     private final SaleItemRepository saleItemRepository;
-    private final InventoryRepository inventoryRepository;
     private final ProductRepository productRepository;
+    private final InventoryRepository inventoryRepository;
 
     public SaleItemService(SaleItemRepository saleItemRepository,
-                           InventoryRepository inventoryRepository,
-                           ProductRepository productRepository) {
+                           ProductRepository productRepository,
+                           InventoryRepository inventoryRepository) {
         this.saleItemRepository = saleItemRepository;
-        this.inventoryRepository = inventoryRepository;
         this.productRepository = productRepository;
+        this.inventoryRepository = inventoryRepository;
     }
 
     public List<SaleItem> getAllSaleItems() {
@@ -35,90 +35,94 @@ public class SaleItemService {
         return saleItemRepository.findById(id);
     }
 
-    public SaleItem saveSaleItem(SaleItem saleItem) {
+    public SaleItem saveSaleItem(SaleItem saleItem) throws Exception {
         Product product = productRepository.findById(saleItem.getProduct().getId())
-                .orElseThrow(() -> new RuntimeException("Product not found"));
+                .orElseThrow(() -> new Exception("Product not found"));
 
-        Double priceObj = product.getPrice();
-        if (priceObj == null) {
-            throw new RuntimeException("Product price is not set for product id " + product.getId());
-        }
-        double price = priceObj;
-
-        Inventory inventory = inventoryRepository.findByProductId(saleItem.getProduct().getId())
-                .orElseThrow(() -> new RuntimeException("Inventory not found for product id " + saleItem.getProduct().getId()));
-        
-        int newQty = inventory.getQuantity() - saleItem.getQuantity();
-        if (newQty < 0) {
-            throw new RuntimeException("Not enough inventory for product id " + product.getId());
+        if (product.getPrice() == null) {
+            throw new Exception("Product price must not be null");
         }
 
-        inventory.setQuantity(newQty);
+        Integer quantity = saleItem.getQuantity();
+        if (quantity == null || quantity <= 0) {
+            throw new Exception("Quantity must be greater than zero");
+        }
+
+        Double discount = saleItem.getDiscount() != null ? saleItem.getDiscount() : 0.0;
+        if (discount < 0 || discount > 100) {
+            throw new Exception("Discount must be between 0 and 100");
+        }
+
+        // Use new method to avoid multiple results error
+        Inventory inventory = inventoryRepository.findFirstByProduct_Id(product.getId())
+                .orElseThrow(() -> new Exception("Inventory not found for product"));
+
+        if (inventory.getQuantity() < quantity) {
+            throw new Exception("Insufficient inventory quantity");
+        }
+
+        inventory.setQuantity(inventory.getQuantity() - quantity);
         inventoryRepository.save(inventory);
 
-        // Calculate total using percentage discount
-        double discountPercent = saleItem.getDiscount() != null ? saleItem.getDiscount() : 0.0;
-        double totalBeforeDiscount = price * saleItem.getQuantity();
-        double discountAmount = totalBeforeDiscount * (discountPercent / 100.0);
-        double total = totalBeforeDiscount - discountAmount;
+        double total = quantity * product.getPrice() * (1 - discount / 100.0);
         saleItem.setTotal(total);
-
-        if (saleItem.getSaleDate() == null) {
-            saleItem.setSaleDate(LocalDateTime.now());
-        }
+        saleItem.setSaleDate(LocalDateTime.now());
+        saleItem.setProduct(product);
 
         return saleItemRepository.save(saleItem);
     }
 
-    public SaleItem updateSaleItem(Long id, SaleItem updatedSaleItem) {
-        return saleItemRepository.findById(id).map(existing -> {
-            Inventory inventory = inventoryRepository.findByProductId(existing.getProduct().getId())
-                    .orElseThrow(() -> new RuntimeException("Inventory not found for product id " + existing.getProduct().getId()));
+    public SaleItem updateSaleItem(Long id, SaleItem saleItem) throws Exception {
+        SaleItem existing = saleItemRepository.findById(id)
+                .orElseThrow(() -> new Exception("Sale item not found"));
 
-            inventory.setQuantity(inventory.getQuantity() + existing.getQuantity());
-            inventoryRepository.save(inventory);
+        Inventory inventory = inventoryRepository.findFirstByProduct_Id(existing.getProduct().getId())
+                .orElseThrow(() -> new Exception("Inventory not found for product"));
 
-            Product product = productRepository.findById(updatedSaleItem.getProduct().getId())
-                    .orElseThrow(() -> new RuntimeException("Product not found"));
+        // Restore old quantity
+        inventory.setQuantity(inventory.getQuantity() + existing.getQuantity());
 
-            Inventory newInventory = inventoryRepository.findByProductId(product.getId())
-                    .orElseThrow(() -> new RuntimeException("Inventory not found for product id " + product.getId()));
+        Integer newQuantity = saleItem.getQuantity();
+        if (newQuantity == null || newQuantity <= 0) {
+            throw new Exception("Quantity must be greater than zero");
+        }
 
-            int availableQty = newInventory.getQuantity();
-            int newQty = updatedSaleItem.getQuantity();
+        Double discount = saleItem.getDiscount() != null ? saleItem.getDiscount() : 0.0;
+        if (discount < 0 || discount > 100) {
+            throw new Exception("Discount must be between 0 and 100");
+        }
 
-            if (newQty > availableQty) {
-                throw new RuntimeException("Insufficient quantity in inventory. Available: " + availableQty);
-            }
+        Product product = productRepository.findById(saleItem.getProduct().getId())
+                .orElseThrow(() -> new Exception("Product not found"));
 
-            double price = product.getPrice();
-            double discountPercent = updatedSaleItem.getDiscount() != null ? updatedSaleItem.getDiscount() : 0.0;
-            double totalBeforeDiscount = price * newQty;
-            double discountAmount = totalBeforeDiscount * (discountPercent / 100.0);
-            double total = totalBeforeDiscount - discountAmount;
+        if (inventory.getQuantity() < newQuantity) {
+            throw new Exception("Insufficient inventory quantity for update");
+        }
 
-            newInventory.setQuantity(availableQty - newQty);
-            inventoryRepository.save(newInventory);
+        inventory.setQuantity(inventory.getQuantity() - newQuantity);
+        inventoryRepository.save(inventory);
 
-            existing.setSale(updatedSaleItem.getSale());
-            existing.setProduct(product);
-            existing.setQuantity(newQty);
-            existing.setDiscount(discountPercent);
-            existing.setTotal(total);
+        double total = newQuantity * product.getPrice() * (1 - discount / 100.0);
 
-            return saleItemRepository.save(existing);
-        }).orElseThrow(() -> new RuntimeException("SaleItem not found with id " + id));
+        existing.setQuantity(newQuantity);
+        existing.setDiscount(discount);
+        existing.setTotal(total);
+        existing.setSaleDate(LocalDateTime.now());
+        existing.setProduct(product);
+
+        return saleItemRepository.save(existing);
     }
 
-    public void deleteSaleItem(Long id) {
-        saleItemRepository.findById(id).ifPresent(saleItem -> {
-            Inventory inventory = inventoryRepository.findByProductId(saleItem.getProduct().getId())
-                    .orElseThrow(() -> new RuntimeException("Inventory not found for product id " + saleItem.getProduct().getId()));
+    public void deleteSaleItem(Long id) throws Exception {
+        SaleItem existing = saleItemRepository.findById(id)
+                .orElseThrow(() -> new Exception("Sale item not found"));
 
-            inventory.setQuantity(inventory.getQuantity() + saleItem.getQuantity());
-            inventoryRepository.save(inventory);
+        Inventory inventory = inventoryRepository.findFirstByProduct_Id(existing.getProduct().getId())
+                .orElseThrow(() -> new Exception("Inventory not found for product"));
 
-            saleItemRepository.delete(saleItem);
-        });
+        inventory.setQuantity(inventory.getQuantity() + existing.getQuantity());
+        inventoryRepository.save(inventory);
+
+        saleItemRepository.deleteById(id);
     }
 }

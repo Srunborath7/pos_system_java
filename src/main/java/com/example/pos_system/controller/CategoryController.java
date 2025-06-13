@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/categories")
@@ -30,31 +31,55 @@ public class CategoryController {
 
     // Create single category
     @PostMapping
-    public ResponseEntity<String> create(@RequestBody Category category) {
-        categoryService.save(category);
-        return ResponseEntity.status(201).body("Category inserted successfully");
+    public ResponseEntity<?> create(@RequestBody Category category) {
+        Category savedCategory = categoryService.save(category);
+        return ResponseEntity.status(201).body(Map.of(
+                "message", "Category inserted successfully",
+                "data", savedCategory
+        ));
     }
 
     // Create multiple categories
     @PostMapping("/batch")
-    public ResponseEntity<String> createMultiple(@RequestBody List<Category> categories) {
-        categories.forEach(categoryService::save);
-        return ResponseEntity.status(201).body("Categories inserted successfully");
+    public ResponseEntity<?> createMultiple(@RequestBody List<Category> categories) {
+        List<Category> savedCategories = categories.stream()
+                .map(categoryService::save)
+                .toList();
+
+        return ResponseEntity.status(201).body(Map.of(
+                "message", "Categories inserted successfully",
+                "data", savedCategories
+        ));
     }
 
+    // Update category
     @PutMapping("/{id}")
-    public ResponseEntity<Category> update(@PathVariable Long id, @RequestBody Category categoryDetails) {
+    public ResponseEntity<?> update(@PathVariable Long id, @RequestBody Category categoryDetails) {
         return categoryService.findById(id).map(category -> {
             category.setCateName(categoryDetails.getCateName());
             category.setDescription(categoryDetails.getDescription());
             category.setUser(categoryDetails.getUser());
-            return ResponseEntity.ok(categoryService.save(category));
-        }).orElse(ResponseEntity.notFound().build());
+            Category updatedCategory = categoryService.save(category);
+            return ResponseEntity.ok(Map.of(
+                    "message", "Category updated successfully",
+                    "data", updatedCategory
+            ));
+        }).orElse(ResponseEntity.status(404).body(Map.of(
+                "error", "Category not found"
+        )));
     }
 
+    // Delete category
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        categoryService.deleteById(id);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<?> delete(@PathVariable Long id) {
+        return categoryService.findById(id).map(category -> {
+            categoryService.deleteById(id);
+            return ResponseEntity.ok(Map.of(
+                    "message", "Category deleted successfully"
+            ));
+        }).orElse(ResponseEntity.status(404).body(Map.of(
+                "error", "Category not found"
+        )));
     }
+
 }

@@ -17,17 +17,17 @@ public class SaleItem {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "sale_id", nullable = false)
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    @JsonIgnoreProperties({"saleItems", "customer", "user", "hibernateLazyInitializer", "handler"})
     private Sale sale;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id", nullable = false)
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    @JsonIgnoreProperties({"inventory", "saleItems", "category", "user", "hibernateLazyInitializer", "handler"})
     private Product product;
 
     private Integer quantity;
 
-    private Double discount;
+    private Double discount; // e.g. 10 for 10%
 
     private Double total;
 

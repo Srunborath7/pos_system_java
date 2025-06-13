@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/sales")
@@ -34,37 +35,47 @@ public class SaleController {
     public ResponseEntity<?> createSale(@RequestBody Sale sale) {
         try {
             Sale savedSale = saleService.saveSale(sale);
-            return ResponseEntity.status(201).body(savedSale);
+            return ResponseEntity.status(201).body(Map.of(
+                    "message", "Sale created successfully",
+                    "data", savedSale
+            ));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body("Error saving sale: " + e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of(
+                    "error", "Error saving sale: " + e.getMessage()
+            ));
         }
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<?> updateSale(@PathVariable Long id, @RequestBody Sale saleDetails) {
         return saleService.getSaleById(id).map(existingSale -> {
-            // Update fields (only description, customer, user for example)
             existingSale.setDescription(saleDetails.getDescription());
             existingSale.setCustomer(saleDetails.getCustomer());
             existingSale.setUser(saleDetails.getUser());
-            // If you want to allow updating saleDate:
             if (saleDetails.getSaleDate() != null) {
                 existingSale.setSaleDate(saleDetails.getSaleDate());
             }
 
             Sale updatedSale = saleService.saveSale(existingSale);
-            return ResponseEntity.ok(updatedSale);
-        }).orElseGet(() -> ResponseEntity.notFound().build());
+            return ResponseEntity.ok(Map.of(
+                    "message", "Sale updated successfully",
+                    "data", updatedSale
+            ));
+        }).orElseGet(() -> ResponseEntity.status(404).body(Map.of(
+                "error", "Sale not found"
+        )));
     }
-
 
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteSale(@PathVariable Long id) {
-        try {
+        return saleService.getSaleById(id).map(sale -> {
             saleService.deleteSale(id);
-            return ResponseEntity.noContent().build();
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body("Error deleting sale: " + e.getMessage());
-        }
+            return ResponseEntity.ok(Map.of(
+                    "message", "Sale deleted successfully"
+            ));
+        }).orElseGet(() -> ResponseEntity.status(404).body(Map.of(
+                "error", "Sale not found"
+        )));
     }
+
 }

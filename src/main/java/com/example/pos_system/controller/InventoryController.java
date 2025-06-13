@@ -5,7 +5,9 @@ import com.example.pos_system.service.InventoryService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/inventories")
@@ -18,37 +20,66 @@ public class InventoryController {
     }
 
     @GetMapping
-    public List<Inventory> getAll() {
-        return service.getAllInventories();
+    public ResponseEntity<?> getAll() {
+        try {
+            List<Inventory> inventories = service.getAllInventories();
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Inventory list fetched successfully");
+            response.put("data", inventories);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
+        }
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Inventory> getById(@PathVariable Long id) {
-        Inventory inventory = service.getInventoryById(id);
-        if (inventory != null) {
-            return ResponseEntity.ok(inventory);
+    public ResponseEntity<?> getById(@PathVariable Long id) {
+        try {
+            Inventory inventory = service.getInventoryById(id);
+            if (inventory != null) {
+                return ResponseEntity.ok(Map.of("message", "Inventory fetched successfully", "data", inventory));
+            }
+            return ResponseEntity.status(404).body(Map.of("message", "Inventory not found with ID " + id));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
         }
-        return ResponseEntity.notFound().build();
     }
 
     @PostMapping
-    public ResponseEntity<String> create(@RequestBody Inventory inventory) {
-        service.saveInventory(inventory);
-        return ResponseEntity.status(201).body("Inventory created successfully");
+    public ResponseEntity<?> create(@RequestBody Inventory inventory) {
+        try {
+            Inventory saved = service.saveInventory(inventory);
+            return ResponseEntity.status(201).body(Map.of("message", "Inventory created successfully", "data", saved));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<String> update(@PathVariable Long id, @RequestBody Inventory inventory) {
-        Inventory updated = service.updateInventory(id, inventory);
-        if (updated != null) {
-            return ResponseEntity.ok("Inventory updated successfully");
+    public ResponseEntity<?> update(@PathVariable Long id, @RequestBody Inventory inventory) {
+        try {
+            Inventory updated = service.updateInventory(id, inventory);
+            if (updated != null) {
+                return ResponseEntity.ok(Map.of("message", "Inventory updated successfully", "data", updated));
+            } else {
+                return ResponseEntity.status(404).body(Map.of("message", "Inventory not found with ID " + id));
+            }
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
-        return ResponseEntity.notFound().build();
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> delete(@PathVariable Long id) {
-        service.deleteInventory(id);
-        return ResponseEntity.ok("Inventory deleted successfully");
+    public ResponseEntity<?> delete(@PathVariable Long id) {
+        try {
+            boolean deleted = service.deleteInventory(id);
+            if (deleted) {
+                return ResponseEntity.ok(Map.of("message", "Inventory deleted successfully"));
+            } else {
+                return ResponseEntity.status(404).body(Map.of("message", "Inventory not found with ID " + id));
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
+        }
     }
 }

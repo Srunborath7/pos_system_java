@@ -38,18 +38,19 @@ public class InvoiceController {
 
     @Autowired
     private InvoiceRepository invoiceRepository;
+
     @GetMapping
     public List<Invoice> getAllInvoices() {
         return invoiceRepository.findAll();
     }
 
-    // GET single invoice by id
     @GetMapping("/{id}")
     public ResponseEntity<Invoice> getInvoiceById(@PathVariable Long id) {
         return invoiceRepository.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
+
     @PostMapping(produces = MediaType.APPLICATION_PDF_VALUE)
     public void createInvoice(@RequestBody InvoiceRequest request, HttpServletResponse response) throws IOException {
         Long saleId = request.getSaleId();
@@ -61,6 +62,16 @@ public class InvoiceController {
 
         // Fetch related SaleItems
         List<SaleItem> items = saleItemRepository.findBySale_SaleId(saleId);
+
+        // Check if any SaleItem has today's date
+        boolean hasTodaySale = items.stream().anyMatch(item ->
+                item.getSaleDate() != null &&
+                        item.getSaleDate().toLocalDate().isEqual(LocalDateTime.now().toLocalDate())
+        );
+
+        if (!hasTodaySale) {
+            throw new RuntimeException("Invoice can only be created for today's sales.");
+        }
 
         // Calculate totals
         double total = items.stream().mapToDouble(SaleItem::getTotal).sum();

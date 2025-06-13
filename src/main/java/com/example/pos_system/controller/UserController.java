@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/users")
@@ -30,28 +31,37 @@ public class UserController {
     }
 
     @PostMapping
-    public ResponseEntity<String> create(@RequestBody User user) {
-        userService.save(user);
-        return ResponseEntity.status(201).body("User inserted successfully");
+    public ResponseEntity<?> create(@RequestBody User user) {
+        User savedUser = userService.save(user);
+        return ResponseEntity.status(201).body(Map.of(
+                "message", "User inserted successfully",
+                "data", savedUser
+        ));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<String> update(@PathVariable Long id, @RequestBody User userDetails) {
+    public ResponseEntity<?> update(@PathVariable Long id, @RequestBody User userDetails) {
         return userService.findById(id).map(user -> {
             user.setName(userDetails.getName());
             user.setEmail(userDetails.getEmail());
             user.setPassword(userDetails.getPassword());
-            userService.save(user);
-            return ResponseEntity.ok("User updated successfully");
+            User updatedUser = userService.save(user);
+            return ResponseEntity.ok(Map.of(
+                    "message", "User updated successfully",
+                    "data", updatedUser
+            ));
         }).orElse(ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> delete(@PathVariable Long id) {
+    public ResponseEntity<?> delete(@PathVariable Long id) {
         return userService.findById(id).map(user -> {
             userService.deleteById(id);
-            return ResponseEntity.ok("User deleted successfully");
+            return ResponseEntity.ok(Map.of(
+                    "message", "User deleted successfully"
+            ));
         }).orElse(ResponseEntity.notFound().build());
     }
+
 
 }
