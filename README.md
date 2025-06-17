@@ -281,7 +281,7 @@ http://localhost:8080/api/
 
 You can import the collection directly into Postman to test the API.
 
-📎 Download here: [Pos_System.postman_collection.json](./Pos_System.postman_collection.json)
+📎 Download here:[./Pos_System.postman_collection.json](https://github.com/Srunborath7/pos_system_java/blob/main/Pos_Sytem.postman_collection.json)
 
 To import:
 
